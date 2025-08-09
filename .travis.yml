@@ -1,0 +1,23 @@
+matrix:
+  include:
+    - language: java
+      jdk:
+        - openjdk11
+      before_install:
+        - "cd backend"
+      script:
+        - "mvn clean install"
+    - language: node_js
+      node_js:
+        - 20.19.2
+      before_install:
+        - "cd frontend"
+        - "rm -rf node_modules"
+        - "yarn install"
+      
+      script:
+        - "cd .."
+        - "cd frontend"
+        - "yarn test"
+notifications:
+  email: vinhtrungngo1907@gmail.com
