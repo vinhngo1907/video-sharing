@@ -4,6 +4,7 @@ import Participant from "../Participant";
 import firepadRef from "../../streamingServer/firebase";
 import { setIsStreamer } from "../../redux/features/liveStreamSlice";
 import { type RootState } from "../../redux/store";
+import type { ParticipantInfo } from "../../redux/types/liveStream";
 
 const Participants: React.FC = () => {
     const dispatch = useDispatch();
@@ -96,19 +97,15 @@ const Participants: React.FC = () => {
 
             return (
                 <Participant
-                    participantKey={element}
-                    key={currentIndex}
-                    currentParticipant={streamerParticipant}
-                    curentIndex={currentIndex}
-                    hideVideo={screenPresenter && screenPresenter !== element}
                     streamInfos={streamInfos.current}
-                    showAvatar={
-                        streamerParticipant &&
-                        !streamerParticipant.video &&
-                        !streamerParticipant.screen
-                    }
+                    currentParticipant={currentUserData as ParticipantInfo}
                     clearStreamData={clearStreamData}
-                    videoRef={videoRef}
+                    showStreamerControls={true}
+                    curentIndex={participantKeys.length}
+                    hideVideo={!!screenPresenter && !currentUserData?.screen}
+                    videoRef={videoRef as React.RefObject<HTMLVideoElement>}
+                    showAvatar={!!(currentUserData && !currentUserData.video && !currentUserData.screen)}
+                    currentUser={true}
                 />
             );
         }

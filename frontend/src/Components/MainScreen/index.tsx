@@ -5,11 +5,11 @@ import { connect } from "react-redux";
 import { setMainStream, updateUser } from "../../redux/features/liveStreamSlice"; // ✅ từ slice mới
 
 interface MainScreenProps {
-  stream?: MediaStream;
-  participants: Record<string, any>;
-  currentUser: { audio: boolean; video: boolean; screen: boolean };
-  setMainStream: (stream: MediaStream) => void;
-  updateUser: (user: Partial<{ audio: boolean; video: boolean; screen: boolean }>) => void;
+    stream?: MediaStream;
+    participants: Record<string, any>;
+    currentUser: { audio: boolean; video: boolean; screen: boolean };
+    setMainStream: (stream: MediaStream) => void;
+    updateUser: (user: Partial<{ audio: boolean; video: boolean; screen: boolean }>) => void;
 }
 
 const MainScreen = (props: MainScreenProps) => {
@@ -39,7 +39,7 @@ const MainScreen = (props: MainScreenProps) => {
             if (sender.currentUser) continue;
             const peerConnection = sender.peerConnection
                 .getSenders()
-                .find((s) => (s.track ? s.track.kind === "video" : false));
+                .find((s: RTCRtpSender) => (s.track ? s.track.kind === "video" : false));
             peerConnection?.replaceTrack(stream.getVideoTracks()[0]);
         }
         props.setMainStream(stream);
@@ -58,13 +58,15 @@ const MainScreen = (props: MainScreenProps) => {
 
     const onScreenClick = async () => {
         let mediaStream;
-        if (navigator.getDisplayMedia) {
-            mediaStream = await navigator.getDisplayMedia({ video: true });
+        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+            // mediaStream = await navigator.getDisplayMedia({ video: true });
+            mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         } else if (navigator.mediaDevices.getDisplayMedia) {
             mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         } else {
             mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: { mediaSource: "screen" },
+                // video: { mediaSource: "screen" },
+                video: true
             });
         }
 

@@ -5,6 +5,8 @@ import axios from "axios";
 //     sendVideoUploadedNotification,
 // } from "./notifications";
 import { AuthorizationHeader } from "../utils/setAuthToken";
+import type { VideoDetails } from "../redux/types/video";
+type AxiosResponse<T = any> = Awaited<ReturnType<typeof axios.get>>;
 
 axios.defaults.withCredentials = false;
 
@@ -41,7 +43,9 @@ export const viewVideo = async (
     );
 };
 
-export const createVideo = async (videoDetails: any) => {
+export const  createVideo = async (
+  videoDetails: Omit<VideoDetails, "id">
+): Promise<AxiosResponse<VideoDetails>> => {
     const res = await axios.post(`${API_BASE_URL}videos`, videoDetails, {
         headers: AuthorizationHeader(),
     });

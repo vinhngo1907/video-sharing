@@ -8,6 +8,16 @@ export interface Participant {
     peerConnection?: RTCPeerConnection;
 }
 
+export interface ParticipantInfo {
+    name?: string;
+    audio?: boolean;
+    video?: boolean;
+    screen?: boolean;
+    currentUser?: boolean;
+    avatarColor?: string;
+    peerConnection?: RTCPeerConnection;
+}
+
 export interface LiveStreamState {
     mainStream: MediaStream | null;
     participants: Record<string, Participant>;

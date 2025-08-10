@@ -23,7 +23,7 @@ interface StreamInfos {
 }
 
 interface ParticipantProps {
-    participantKey: string; // 🔹 bắt buộc có participantKey
+    participantKey?: string;
     curentIndex: number;
     currentParticipant?: ParticipantInfo;
     hideVideo?: boolean | string;

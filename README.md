@@ -1,0 +1,2 @@
+# Video Sharing App
+This is a video sharing and livestreaming platform that allows users to upload, share, and watch videos as well as stream live content. The platform provides a seamless and engaging user experience, catering to both content creators and viewers.

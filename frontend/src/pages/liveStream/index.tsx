@@ -1,129 +1,193 @@
-import React, { useEffect, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import Participant from "../Participant";
-import firepadRef from "../../streamingServer/firebase";
-import { setIsStreamer } from "../../redux/features/liveStreamSlice";
-import { RootState } from "../../redux/store";
+// liveStream.tsx
+import React, { useEffect } from "react";
+import MainScreen from "../../Components/MainScreen/";
+import firepadRef, { db } from "../../streamingServer/firebase";
+import { useSelector, connect } from "react-redux";
+import {
+    addParticipant, removeParticipant,
+    setMainStream, setStreamer, setStreamId,
+    setUser, updateParticipant
+} from "../../redux/features/liveStreamSlice";
+import { createVideo, getAllVideos } from "../../services/video";
+import type { UserDetails } from "../../redux/types/user";
+import type { VideoDetails } from "../../redux/types/video";
 
-interface StreamInfos {
-  viewersCount?: number;
-  uniqueCountedParticipants?: Record<string, number>;
+// ---- Redux State Type ----
+interface RootState {
+    isStreamer: boolean;
+    mainStream?: MediaStream;
+    currentUser?: Record<string, any>;
 }
 
-const Participants: React.FC = () => {
-  const dispatch = useDispatch();
-  const { participants, currentUser, mainStream, isStreamer, streamer } =
-    useSelector((state: RootState) => state.liveStream);
+// ---- Props cho component ----
+interface LiveStreamProps {
+    stream?: MediaStream;
+    user?: Record<string, any>;
+    setMainStream: (stream: MediaStream) => void;
+    addParticipant: (user: any) => void;
+    setUser: (user: any) => void;
+    removeParticipant: (userId: string) => void;
+    updateParticipant: (user: any) => void;
+    setStreamer: (streamer: any) => void;
+    setStreamId: (id: string) => void;
+}
 
-  const streamInfos = useRef<StreamInfos>({});
+const LiveStream: React.FC<LiveStreamProps> = (props) => {
+    const isStreamer = useSelector((state: RootState) => state.isStreamer);
+    // const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const user: UserDetails | null = JSON.parse(
+        localStorage.getItem("user") || "null"
+    );
+    const userName = user?.username || "Guest";
 
-  const clearStreamData = () => {
-    firepadRef
-      .remove()
-      .then(() => console.log("All data removed successfully."))
-      .catch((error) => console.error("Error removing data:", error));
-  };
+    // Lấy stream local từ camera/micro
+    const getUserStream = async (): Promise<MediaStream> => {
+        return await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: true,
+        });
+    };
 
-  const participantRef = firepadRef.child("participants");
+    const connectedRef = db.database().ref(".info/connected");
+    const participantRef = firepadRef.child("participants");
 
-  useEffect(() => {
-    participantRef.on("value", (snapshot) => {
-      if (snapshot.val()) {
-        const streamParticipantsNames = Object.values(snapshot.val()).map(
-          (item: any) => item?.userName
-        );
-        streamInfos.current.viewersCount = Object.keys(snapshot.val()).length;
-        streamInfos.current.uniqueCountedParticipants = {};
-        for (const participant of streamParticipantsNames) {
-          streamInfos.current.uniqueCountedParticipants[participant as string] =
-            (streamInfos.current.uniqueCountedParticipants[participant as string] || 0) + 1;
-        }
-      }
-    });
-  }, []);
+    const isUserSet = !!props.user;
+    const isStreamSet = !!props.stream;
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+    // Get stream and resgis user when connecting
+    useEffect(() => {
+        const asyncFunc = async () => {
+            const stream = await getUserStream();
+            stream.getVideoTracks()[0].enabled = false;
+            props.setMainStream(stream);
 
-  const participantKeys = Object.keys(participants || {});
-  let firstParticipantKey: string | undefined;
-  if (streamer) {
-    firstParticipantKey = Object.keys(streamer)[0];
-  }
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = mainStream || null;
-      videoRef.current.muted = true;
-    }
-  }, [currentUser, mainStream]);
-
-  const currentUserData = currentUser ? Object.values(currentUser)[0] : null;
-
-  const screenPresenter = participantKeys.find((element) => {
-    const currentParticipant = participants[element];
-    return currentParticipant?.screen;
-  });
-
-  const participantElements = participantKeys.map((element, index) => {
-    if (element === firstParticipantKey) {
-      const streamerParticipant = participants[firstParticipantKey!];
-      const pc = streamerParticipant?.peerConnection;
-      const remoteStream = new MediaStream();
-      if (pc) {
-        pc.ontrack = (event: RTCTrackEvent) => {
-          event.streams[0].getTracks().forEach((track) => {
-            remoteStream.addTrack(track);
-          });
-          const videoElement = document.getElementById(
-            `participantVideo${index}`
-          ) as HTMLVideoElement;
-          if (videoElement) videoElement.srcObject = remoteStream;
+            connectedRef.on("value", (snap) => {
+                if (snap.val()) {
+                    const defaultPreference = {
+                        audio: true,
+                        video: false,
+                        screen: false,
+                    };
+                    const userStatusRef = participantRef.push({
+                        userName,
+                        timestamp: db.database.ServerValue.TIMESTAMP,
+                        preferences: defaultPreference,
+                    });
+                    props.setUser({
+                        [userStatusRef.key]: { name: userName, ...defaultPreference },
+                    });
+                    userStatusRef.onDisconnect().remove();
+                }
+            });
         };
-      }
+        asyncFunc();
+    }, []);
 
-      return (
-        <Participant
-          participantKey={element}
-          key={index}
-          currentParticipant={streamerParticipant}
-          curentIndex={index}
-          hideVideo={!!screenPresenter && screenPresenter !== element}
-          streamInfos={streamInfos.current}
-          showAvatar={
-            streamerParticipant && !streamerParticipant.video && !streamerParticipant.screen
-          }
-          clearStreamData={clearStreamData}
-          videoRef={videoRef}
-        />
-      );
-    }
-    return null;
-  });
+    // If streamer, then create video record in DB
+    useEffect(() => {
+        const asyncFunc = async () => {
+            let liveExist = false;
+            const videos = await getAllVideos();
+            (videos as any)?.data?.data?.forEach((video: any) => {
+                if (video.title === `Live streaming from ${userName}`) {
+                    liveExist = true;
+                }
+            });
 
-  participantElements.forEach((p) => {
-    if (p?.props?.curentIndex === 0 && p?.props?.currentParticipant?.name !== "Guest") {
-      dispatch(setIsStreamer(true));
-    }
-  });
 
-  return (
-    <div className="participants">
-      {!isStreamer && participantElements}
-      {isStreamer && (
-        <Participant
-          streamInfos={streamInfos.current}
-          currentParticipant={currentUserData}
-          clearStreamData={clearStreamData}
-          showStreamerControls={true}
-          curentIndex={participantKeys.length}
-          hideVideo={!!screenPresenter && !currentUserData?.screen}
-          videoRef={videoRef}
-          showAvatar={currentUserData && !currentUserData.video && !currentUserData.screen}
-          currentUser={true}
-        />
-      )}
-    </div>
-  );
+            if (isStreamer && !liveExist && user) {
+                const res = await createVideo({
+                    description: `Live streaming from ${userName}, enjoy the stream without cut offs.`,
+                    title: `Live streaming from ${userName}`,
+                    userId: `${user.id}`,
+                    likes: 0,
+                    dislikes: 0,
+                    tags: ["live stream"],
+                    videoURL: window.location.href,
+                    videoStatus: "public",
+                    viewsCount: 0,
+                    thumbnailUrl:
+                        "https://media.gettyimages.com/id/1306922705/vector/live-stream-banner.jpg?s=612x612",
+                });
+
+                if (res.status === 201 && res.data) {
+                    const video = res.data as VideoDetails;
+                    console.log("LIVE STREAM CREATED SUCCESSFULLY 🟩");
+                    props.setStreamId(video.id!);
+                }
+            }
+        };
+        asyncFunc();
+    }, [isStreamer]);
+
+    // Listen to participants
+    useEffect(() => {
+        if (isStreamSet && isUserSet) {
+            participantRef.on("child_added", (snap) => {
+                // Get the first streamer
+                participantRef
+                    .orderByChild("timestamp")
+                    .limitToFirst(1)
+                    .once("value")
+                    .then((snapshot) => {
+                        const firstElement = snapshot.val();
+                        props.setStreamer(firstElement);
+                    });
+
+                // Listen to preferences changes
+                participantRef
+                    .child(snap.key as string)
+                    .child("preferences")
+                    .on("child_changed", (preferenceSnap) => {
+                        const prefKey = preferenceSnap.key;
+                        if (prefKey) {
+                            props.updateParticipant({
+                                [snap.key as string]: {
+                                    [prefKey]: preferenceSnap.val(),
+                                },
+                            });
+                        }
+                    });
+
+                // Add new participant
+                const { userName: name, preferences = {} } = snap.val();
+                props.addParticipant({
+                    [snap.key as string]: {
+                        name,
+                        ...preferences,
+                    },
+                });
+            });
+
+            // When participant is deleted
+            participantRef.on("child_removed", (snap) => {
+                if (snap.key) {
+                    props.removeParticipant(snap.key);
+                }
+            });
+        }
+    }, [isStreamSet, isUserSet]);
+
+    return (
+        <div className="App">
+            <MainScreen />
+        </div>
+    );
 };
 
-export default Participants;
+const mapStateToProps = (state: RootState) => ({
+    stream: state.mainStream,
+    user: state.currentUser,
+});
+
+const mapDispatchToProps = {
+    setMainStream,
+    addParticipant,
+    setUser,
+    removeParticipant,
+    updateParticipant,
+    setStreamer,
+    setStreamId,
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(LiveStream);
