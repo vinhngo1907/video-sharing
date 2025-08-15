@@ -4,6 +4,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import com.video_sharing.app.video_sharing_app.Entities.UserEntity;
@@ -15,6 +16,10 @@ import com.video_sharing.app.video_sharing_app.models.Users.Role;
 import com.video_sharing.app.video_sharing_app.models.Users.UserDetailsImp;
 import com.video_sharing.app.video_sharing_app.repositories.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
 public class AuthenticationServiceImp implements AuthenticationService {
     @Autowired
     UserRepository userRepository;

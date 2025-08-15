@@ -7,10 +7,16 @@ import org.springframework.web.servlet.config.annotation.CorsRegistration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 @SpringBootApplication
 public class VideoSharingAppApplication {
 
 	public static void main(String[] args) {
+		Dotenv dotenv = Dotenv.load();
+		dotenv.entries().forEach(entry -> {
+			System.setProperty(entry.getKey(), entry.getValue());
+		});
 		SpringApplication.run(VideoSharingAppApplication.class, args);
 	}
 
