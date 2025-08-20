@@ -54,3 +54,5 @@ const Alert = ({ msg, show }: IProps) => {
         </Fade>
     )
 }
+
+export default Alert;
