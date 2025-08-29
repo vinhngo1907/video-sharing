@@ -1,7 +1,16 @@
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
-@tailwind utilities;
+@tailwind utilities; */
 
+@import "tailwindcss";
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
+
+/* @import url("./styles/MainScreen.css");
+@import url("./styles/MeetingFooter.css");
+@import url("./styles/Card.css");
+@import url("./styles/Participant.css");
+@import url("./styles/Participants.css");
+@import url("./styles/Video.css");
+@import url("./styles/sidebarNavStyles.css"); */

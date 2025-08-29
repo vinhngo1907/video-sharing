@@ -6,11 +6,12 @@ import axios from "axios";
 // } from "./notifications";
 import { AuthorizationHeader } from "../utils/setAuthToken";
 import type { VideoDetails } from "../redux/types/video";
+import { API_BASE_URL } from "../contexts/constants";
 type AxiosResponse<T = any> = Awaited<ReturnType<typeof axios.get>>;
 
 axios.defaults.withCredentials = false;
 
-const API_BASE_URL = "http://localhost:8080/api/";
+// const API_BASE_URL = "http://localhost:8080/api/";
 
 export const getAllVideos = async (idUser?: string) => {
     const url = idUser

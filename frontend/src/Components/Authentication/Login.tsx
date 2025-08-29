@@ -1,8 +1,12 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AiTwotoneEye, AiTwotoneEyeInvisible } from "react-icons/ai";
 import Alert from "../Alert";
+import { setUser } from "../../redux/features/userSlice";
+import { useAppDispatch } from "../../hooks/reduxHooks";
+import { login } from "../../services/user";
 // import { ReactComponent as Waves } from "../../assets/wave.svg";
+import Waves from "../../assets/wave.svg";
 
 interface LoginState {
     username: string;
@@ -23,6 +27,8 @@ const Login: React.FC = () => {
     const [showPass, setShowPass] = useState(false);
     const [alert, setAlert] = useState<AlertState>({ show: false, msg: "" });
     const [userLogin, setUserLogin] = useState<LoginState>(INITIA_STATE);
+    const dispatch = useAppDispatch();
+    const history = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // setUserLogin({ ...userLogin, [e.target.name]: e.target.value })
@@ -32,8 +38,30 @@ const Login: React.FC = () => {
         }))
     }
 
-    const handelSubmit = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handelSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
+        if (userLogin.username.length < 4) {
+            setAlert({ msg: "Username is at least 4 characters", show: true })
+        } else if (userLogin.password.length < 8) {
+            setAlert({
+                show: true,
+                msg: "Password must be at least 8 characters",
+            });
+        } else {
+            try {
+                const data = await login(userLogin);
+                if (data) {
+
+                    dispatch(setUser(data));
+                }
+                history("/");
+            } catch (error: any) {
+                setAlert({
+                    show: true,
+                    msg: "Bad credentials ! :)",
+                });
+            }
+        }
     }
     return (
         <section className="flex justify-center">
@@ -110,7 +138,7 @@ const Login: React.FC = () => {
                 </div>
             </div>
             <div className="absolute bottom-0 right-0 left-0 w-full -z-10 overflow-x-hidden">
-                {/* <Waves style={{ width: "100%", height: "100%" }} /> */}
+                <img style={{ width: "100%", height: "100%" }}  src={Waves}/>
             </div>
             {
                 alert.show && <span className="absolute top-1/2 left-1/4 right-0 z-40">

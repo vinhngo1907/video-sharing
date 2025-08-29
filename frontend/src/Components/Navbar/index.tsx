@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 // @ts-ignore
-import Fade from "react-reveal/Fade";
+// import Fade from "react-reveal/Fade";
+import { Fade } from "react-awesome-reveal";
 import UploadIcon from "../../assets/upload.svg";
 import SearchBar from "../search/SearchBar";
 import { CiStreamOn } from "react-icons/ci";
@@ -239,7 +240,7 @@ const NavBar = () => {
                     </div>
                 </div>
             </div>
-            <Fade top>
+            <Fade direction="down">
                 <div
                     className={"sm:hidden bg-gray-800" + (navShow ? " block" : " hidden")}
                     id="mobile-menu"

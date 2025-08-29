@@ -1,5 +1,4 @@
-// @ts-ignore
-import Fade from "react-reveal/Fade";
+import { Fade } from "react-awesome-reveal";
 
 interface IProps {
     msg: string,
@@ -8,7 +7,7 @@ interface IProps {
 
 const Alert = ({ msg, show }: IProps) => {
     return (
-        <Fade top>
+        <Fade direction="down">
             <div
                 id="alert-1"
                 className={"flex p-4 mb-4 text-white rounded bg-red-600 max-w-xl"}
